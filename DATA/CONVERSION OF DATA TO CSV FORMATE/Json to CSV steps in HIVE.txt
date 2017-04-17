@@ -1,0 +1,11 @@
+//hive
+create databse census;
+use census;
+
+1. create table demo(jsondata string) row format delimited stored as textfile;
+2. load data inpath '/home/cloudera/Desktop/sample.dat' into table demo;
+
+3. create table census_csv(age int,education string,maritalstatus string,gender string,taxfilerstatus string,income double,parents string,countryofbirth string,citizenship string,weekworked int) row format delimited fields terminated by ',' stored as textfile;
+4. insert overwrite table census_csv select get_json_object(jsondata,"$.Age"),get_json_object(jsondata,"$.Education"),get_json_object(jsondata,"$.MaritalStatus"),get_json_object(jsondata,"$.Gender"),get_json_object(jsondata,"$.TaxFilerStatus"),get_json_object(jsondata,"$.Income"),get_json_object(jsondata,"$.Parents"),get_json_object(jsondata,"$.CountryOfBirth"),get_json_object(jsondata,"$.Citizenship"),get_json_object(jsondata,"$.WeeksWorked") from demo;
+
+census_csv has been created in the /usr/hive/warehouse/censusdb.db/demo/000000_0
