@@ -1,0 +1,69 @@
+
+Divorced:-
+----------------
+
+1) Finding Of Divorced and Non Dvorced percentage from all the records 
+
+//Loading notdivorced data from total data
+CREATE VIEW notdivorced as SELECT maritalstatus,COUNT(maritalstatus) as notdivorced FROM census WHERE maritalstatus != 'Divorced' GROUP BY maritalstatus;
+//Calculating total number of people not divorced people
+CREATE VIEW totalnotdivorced as SELECT SUM(notdivorced) as sumofnotdevorced FROM notdivorced;
+//Loading notdivorced data from total data
+CREATE VIEW divorced as SELECT maritalstatus,COUNT(maritalstatus) as divorced FROM census WHERE maritalstatus = 'Divorced' GROUP BY maritalstatus;
+//calculating total records in givendata
+CREATE VIEW total as SELECT total FROM (SELECT SUM(t) as total FROM (SELECT age,COUNT(age) as t FROM census GROUP BY age) a) b;
+//Keeping total,notdivorced,divorced details into a single view(sub-table)
+CREATE VIEW divorcedetails as SELECT total,sumofnotdivorced,divorced from (SELECT total FROM total) a JOIN (SELECT sumofnotdevorced as sumofnotdivorced FROM totalnotdivorced) b JOIN (SELECT divorced FROM divorced) c;
+//calcutaing divorced and not divorced percentage
+CREATE VIEW divorcepercentage as SELECT total,sumofnotdivorced,(sumofnotdivorced*100)/total as notdivorcedpercentage,divorced,(divorced*100)/total as divorcedpercentage FROM divorcedetails;
+
+total	sumofnotdivorced	notdivorcedpercentage	divorced	divorcedpercentage
+596523	558545			93.63343911299313	37978		6.366560887006871
+
+
+
+
+2) Divorce people who are educated and uneducated and their percentage 
+
+//loading  divorced and educated details
+CREATE VIEW  educateddetails as SELECT education,maritalstatus,COUNT(education) as educated FROM census WHERE maritalstatus = 'Divorced' AND education !='Less than 1st grade' AND education != 'Children' GROUP BY education,maritalstatus;
+//loading  divorced and uneducated details
+CREATE VIEW  uneducateddetails as SELECT maritalstatus,education,COUNT(education) as uneducated FROM census WHERE maritalstatus = 'Divorced' AND (education = 'Less than 1st grade' OR education = 'Children') GROUP BY education,maritalstatus;
+//calculating divorce peoples educated and uneducated details 
+CREATE VIEW  divorcedetails  as SELECT totaleducated,totaluneducated FROM (SELECT SUM(educated) as totaleducated FROM educateddetails) a JOIN (SELECT SUM(uneducated) as totaluneducated FROM uneducateddetails) b;
+//keeping requried data in a one view(sub-table)
+CREATE VIEW  Alldetails as SELECT totaleducated,totaluneducated,total FROM (SELECT SUM(totaleducated+totaluneducated) as total FROM divorcedetails) a JOIN divorcedetails;
+//calculating percentage
+CREATE VIEW  percentageofdivorce as SELECT total,(totaleducated*100)/total as educatedpercentage,(totaluneducated*100)/total as uneducatedpercentage FROM Alldetails; 
+
+RESULT:-
+--------
+total	educatedpercentage	uneducatedpercentage
+37978	99.84488787233484	0.15511212766516813
+
+
+
+3)Which age have more no.of devorced compare with total divorce display top ten
+
+//calculating total number of records in data
+CREATE VIEW A1 as SELECT totalrecords FROM (SELECT SUM(records) as totalrecords FROM (SELECT age,COUNT(*) as records FROM census WHERE maritalstatus ='Divorced' GROUP BY age) a) b;
+//loading requried data from data and keeping in desending order and limiting the data
+CREATE VIEW A2 as SELECT age,COUNT(maritalstatus) as divorced FROM census WHERE maritalstatus = 'Divorced' GROUP BY age ORDER BY divorced desc LIMIT 10;
+//calculating percentage
+CREATE VIEW A3 as SELECT age,(divorced*100)/total as percentageofdivorce FROM (SELECT totalrecords as total FROM A1) a JOIN (SELECT age,divorced FROM A2) b;
+
+
+RESULT :-
+---------
+
+age	percentageofdivorce
+46	0.21340333901626593
+45	0.2088771095163137
+36	0.20653017570152366
+41	0.2063625375718958
+37	0.20502143253487293
+40	0.2021715843311993
+47	0.1971424404423635
+35	0.19580133540534062
+42	0.18775470518320334
+43	0.1865812382758083
