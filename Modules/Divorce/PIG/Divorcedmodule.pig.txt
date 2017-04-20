@@ -1,0 +1,104 @@
+1) Finding Of Divorced and Non Dvorced percentage from all the records 
+
+-- loading data in to pig
+loadingdata = LOAD '/home/hduser/census' USING PigStorage(',') as (age : int,eductaion : chararray,martialstatus : chararray,gender : chararray,taxfilerstatus : chararray,income : double,parents : chararray,countryofbirth : chararray,citizenship : chararray,weekworked : int);
+--filtering data from loadeddata
+forfindingdivorced = FILTER loadingdata BY martialstatus=='Divorced';
+--grouping 
+forfindingcount = GROUP forfindingdivorced BY all;
+--counting divorced people
+finalcountofdivorced = FOREACH forfindingcount GENERATE COUNT(forfindingdivorced.martialstatus) as counting,1 as forjoin;
+--filtering above data
+forfindingmarried = FILTER loadingdata BY martialstatus!='Divorced';
+--grouping above data
+forfindingcount = GROUP forfindingmarried all;
+--counting not divorced people
+finalcountofmarried = FOREACH forfindingcount GENETARE COUNT(forfindingmarried.martialstatus) as counting,1 as forjoin;
+--groupind data to find total percentage
+fortotalper = GROUP loadingdata  BY all;
+--counting of total records
+countoftotalper = FOREACH fortotalper GENERATE COUNT(loadingdata.$0) as totalcount,1 as forjoin;
+--joining all data in to one bag (or) single record
+joiningtoperf = JOIN countoftotalper BY forjoin,finalcountofmarried BY forjoin,finalcountofdivorced BY forjoin;
+--calculating percentage
+finalper = FOREACH joiningtoperf GENERATE countoftotalper.totalcount,(finalcountofdivorced.counting*100)/countoftotalper.totalcount as divorcedpercentage,(finalcountofmarried.counting*100)/countoftotalper.totalcount as notdivorcedpercentage;
+--show result
+dump finalper
+
+RESULT:-
+--------
+
+divorcedpercentage	divorcedpercentage
+6			93
+
+------------------------------------------------------------------
+2) Divorce people who are educated and uneducated and their percentage
+
+
+--loading data into pig
+loadingdata = LOAD '/home/hduser/census' USING PigStorage(',') as (age : int,eductaion : chararray,martialstatus : chararray,gender : chararray,taxfilerstatus : chararray,income : double,parents : chararray,countryofbirth : chararray,citizenship : chararray,weekworked : int);
+--filtering the loaded data
+forfindingdivorcedwithhighedu = FILTER loadingdata BY martialstatus=='Divorced' and eductaion!='Less than 1st grade' and education != 'Children';
+--grouping above data to count education
+forfindingcountedu = GROUP forfindingdivorcedwithhighedu all;
+--counting devorced with higjh educated
+finalcountofdivorcedwithhighedu = FOREACH forfindingcountedu GENERATE COUNT(forfindingdivorcedwithhighedu.martialstatus) as counting,1 as forjoin;
+--filtering divorced with low educated
+forfindingdivorcedwithlowedu = FILTER loadingdata BY martialstatus=='Divorced' AND eductaion=='Less than 1st grade';
+--grouping the data to count divorced with low educated
+forfindingcountlowedu = GROUP forfindingdivorcedwithlowedu all;
+--counting the people who are divorced and low educated(Less than 1st grade)
+finalcountofdivorcedwithlowedu = FOREACH forfindingcountlowedu GENERATE COUNT(forfindingdivorcedwithlowedu.martialstatus) as counting,1 as forjoin;
+--joining the needed data for percentage 
+forperhighedu = JOIN finalcountofdivorcedwithlowedu BY forjoin,finalcountofdivorcedwithhighedu BY forjoin;
+--finding percentage
+percentages = FOREACH forperhighedu GENERATE (finalcountofdivorcedwithlowedu.counting*100)/(finalcountofdivorcedwithlowedu.counting+finalcountofdivorcedwithhighedu.counting) as unedudivorcedpercentage,(finalcountofdivorcedwithhighedu.counting*100)/(finalcountofdivorcedwithlowedu.counting+finalcountofdivorcedwithhighedu.counting) as edudivorcedpercentage;
+--showing result
+dump percentages;
+
+
+RESULT:-
+------
+
+unedudivorcedpercentage 	edudivorcedpercentage
+0				99
+
+
+--------------------------------------------------------------------------------------------
+3) Which age have more no.of devorced compare with total people and display top ten
+
+
+--loading data into pig
+loadingdata = LOAD '/home/hduser/census' USING PigStorage(',') as (age : int,eductaion : chararray,martialstatus : chararray,gender : chararray,taxfilerstatus : chararray,income : double,parents : chararray,countryofbirth : chararray,citizenship : chararray,weekworked : int);
+--filter loded data
+forfindingage = FILTER loadingdata BY martialstatus=='Divorced';
+--grouping above data to find count
+forfindingcountage = GROUP forfindingage BY age;
+--counting of divorced
+finalcountofdivorcedage = FOREACH forfindingcountage GENERATE group,forfindingage.age,COUNT(forfindingage.age) as counting,1 as forjoin;
+--keeping dsending order the data
+ordering = ORDER finalcountofdivorcedage BY counting desc;
+--limiting the data
+limitng = LIMIT ordering 10;
+--grouping the above data to perform count 
+fortotal = GROUP loadingdata all;
+--counting records
+countingtotal = FOREACH fortotal GENERATE COUNT(loadingdata.$0) as totalrecords,1 as forjoin; 
+--keeping all the data in a single record
+joiningdata = JOIN limitng BY forjoin,countingtotal BY forjoin;
+--percenatge calculation
+calculatingpercentage = FOREACH joiningdata GENERATE age,(counting/totalrecords) as percentageofdivorce;
+
+
+age	percentageofdivorce
+46	0
+45	0
+36	0
+41	0
+37	0
+40	0
+47	0
+35	0
+42	0
+43	0
+
