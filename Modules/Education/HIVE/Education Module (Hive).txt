@@ -1,0 +1,75 @@
+
+EDUCATION :-
+-----------
+
+1)Find out the how many are literate and how many are Illiterate from the list?
+
+//loading literate details
+CREATE VIEW literate  as SELECT education,count(education) as literates FROM census WHERE education != 'Less than 1st grade' AND education != 'Children'  GROUP BY education;
+//loading illiterte details
+CREATE VIEW illiterates  as SELECT  education,count(education) as illiterates FROM census WHERE education = 'Less than 1st grade'  OR education = 'Children' GROUP BY education;
+//calcutating total literates and total illiterates
+CREATE VIEW detailsofeducation as SELECT * FROM (SELECT SUM(literates) as totalliterates FROM literate) a JOIN (SELECT SUM(illiterates) as totalilliterates FROM illiterates) b;
+//calculating total people and keeping all in a single view(sub table)
+CREATE VIEW totaldetails as SELECT sum(totalliterates+totalilliterates) as totalpeople,totalliterates,totalilliterates FROM detailsofeducation GROUP by totalliterates , totalilliterates ;
+//finding the percentage
+CREATE VIEW percentage as SELECT totalpeople,(totalliterates*100)/totalpeople as literatepercentage,(totalilliterates*100)/totalpeople as illiteratepercentage FROM totaldetails;
+
+
+ totalpeople	 literatepercentage 	illiteratepercentage
+  596523	  75.8755320415139          24.124467958486093
+
+
+
+
+2) In the literates list how many are married and how many are unmarried?
+
+//loading literates married data
+CREATE VIEW educated as SELECT education,maritalstatus,COUNT(maritalstatus) as c FROM census WHERE (education != 'Less than 1st grade' AND education != 'Children') AND Maritalstatus != 'Never married' GROUP BY maritalstatus,education;
+//loading literates nevermarried data
+CREATE VIEW eduunmarried as SELECT education,maritalstatus,COUNT(maritalstatus) as c FROM census WHERE (education != 'Less than 1st grade' AND education != 'Children') AND Maritalstatus = 'Never married' GROUP BY maritalstatus,education;
+//counting educated married and unmarried details
+CREATE VIEW edumaritaldetails as SELECT * FROM (SELECT SUM(c) as educatedandmarried FROM edumarried) a JOIN (SELECT SUM(c) as educatedandunmarried FROM eduunmarried) b;
+//calculating percentage
+CREATE VIEW educateddetails SELECT SUM(educatedandmarried+educatedandunmarried) as totaleducated,educatedandmarried,educatedandunmarried FROM edumaritaldetails GROUP BY educatedandmarried,educatedandunmarried;
+
+
+RESULT:-
+--------
+
+	totaleducated	educatedandmarried	educatedandunmarried
+	455027		338195			116832
+
+
+
+
+3)how many of non citizen people are studing their ms in us and tell me indian people percentage in that?
+
+//loading all ms studied people data except us people
+CREATE VIEW foreigner as SELECT citizenship,education,countryofbirth,count(education) as studentcount FROM census WHERE (citizenship = 'Native- Born in Puerto Rico or U S Outlying' OR citizenship = 'Foreign born- Not a citizen of U S')  AND countryofbirth !='United-States' AND education = 'Masters degree(MA MS MEng MEd MSW MBA)' GROUP BY citizenship,education,countryofbirth;
+//calculatind indian and foreigner peoples
+CREATE VIEW indiansdetails as SELECT total,exceptindians,Indians FROM ( SELECT SUM(studentcount) as total FROM foreigner) a JOIN ( SELECT SUM(studentcount) as exceptindians FROM foreigner WHERE countryofbirth != 'India' ) b JOIN ( SELECT SUM(studentcount) as Indians FROM foreigner WHERE countryofbirth = 'India') c ;
+//calculating their percentages
+CREATE VIEW indianpercentage as SELECT total,exceptindians,(exceptindians*100)/total as forignerpercentage,Indians,(Indians*100)/total as indianpercentage FROM indiansdetails;
+
+
+RESULT:-
+--------
+
+---     total	exceptindians	forignerpercentage	indians	 indianpercentage
+	1150	1028		89.3913043478261	122	 10.608695652173912
+
+
+4) Find the male and female education percentage of us citizens from their population ?
+
+//loading us educated data
+CREATE VIEW b as SELECT gender,COUNT(education) as educators FROM census WHERE (education != 'Less than 1st grade' AND education != 'Children') AND countryofbirth ='United-States' GROUP BY gender;
+//calculating female and male percentage
+SELECT total,(female*100)/total as femalepercentage,(male*100)/total as malepercentage FROM (SELECT sum(educators) as total FROM b) a JOIN (SELECT educators as female FROM b WHERE gender = 'Female') b JOIN (SELECT educators as male FROM b WHERE gender ='Male') c;
+
+
+RESULT:-
+--------
+
+total	femalepercentage	malepercentage
+393112	53.176702822605264	46.823297177394736
