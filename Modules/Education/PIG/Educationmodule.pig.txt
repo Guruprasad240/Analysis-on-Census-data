@@ -1,0 +1,129 @@
+
+EDUCATION:-
+-----------
+
+
+1)Find out the  literate and illiterate percentage from the record ?
+
+--loading data in to pig
+loadingdata = LOAD '/home/hduser/census' USING PigStorage(',') as (age : int,education : chararray,martialstatus : chararray,gender : chararray,taxfilerstatus : chararray,income : double,parents : chararray,countryofbirth : chararray,citizenship : chararray,weekworked : int);
+--filtering literates data
+literatedata = Filter loadeddata BY education != 'Less than 1st grade' AND  education != 'Children' ;
+--filtering illiterates data
+illiteratedata = Filter loadeddata BY education == 'Less than 1st grade' AND  education == 'Children' ;
+--grouping literates data
+literategrouping = GROUP literatedata all;
+--grouping illiterates data
+illiterategrouping = GROUP illiteratedata all;
+--counting literates
+literates = FOREACH  literategroup GENERATE COUNT(literatedata.education) as literates,1 as keyforjoin;
+--counting illiterates
+illiterates = FOREACH  illiterategroup GENERATE COUNT(illiteratedata.education) as illiterates,1 as keyforjoin;
+--keeping requried data in a single bag
+joiningdata = JOIN literates BY keyforjoin,illiterates BY keyforjoin;
+groupingjoindata = GROUP joiningdata all;
+--findingpercentage
+literatepercentage = FOREACH joiningdata GENERATE SUM(literates+illiterates)as total,(literates*100)/(literates+illiterates) as literaterpercentage,(illiterates*100)/(literates+illiterates) as illiteraterpercentage;
+--showing output
+dump literatepercentage 
+
+RESULT:-
+--------
+
+ total		 literatepercentage 	illiteratepercentage
+  596523	  75		          24
+
+
+
+2) In the literates list how many are married and how many are unmarried?
+
+--loading data in to pig
+loadingdata = LOAD '/home/hduser/census' USING PigStorage(',') as (age : int,education : chararray,martialstatus : chararray,gender : chararray,taxfilerstatus : chararray,income : double,parents : chararray,countryofbirth : chararray,citizenship : chararray,weekworked : int);
+--filtering literates data
+literatedata = Filter loadeddata BY education != 'Less than 1st grade' AND  education != 'Children' ;
+--finding educated and married details
+educatedmarried = FILTER literatedata BY maritalstatus != 'Never married';
+--finding educated and unmarried details
+educatedunmarried = FILTER literatedata BY maritalstatus == 'Never married';
+--grouping educatedmarried to findout the count
+groupingeducatedmarried = GROUP educatedmarried all;
+--grouping educatedunmarried to findout the count
+groupingeducatedunmarried = GROUP educatedunmarried all;
+--counting educated married peoples
+counteducatedmarried = FOREACH educatedmarried GENERATE COUNT(educatedmarried .(maritalstatus)) as em;
+--counting educated unmarried peoples details
+counteducatedunmarried = FOREACH educatedunmarried GENERATE COUNT(educatedunmarried .(maritalstatus)) as eum;
+--grouping counted educatedmarried details to find sum
+groupingcountedmarrieddetails = GROUP counteducatedmarried all;
+--grouping counted educatedunmarried details to find sum
+groupingcountedunmarrieddetails = GROUP counteducatedunmarried all;
+--finding total count of educated and married people
+totaleducatedmarried = FOREACH counteducatedmarried GENERATE SUM(em) as educatedmarried,1 as keyforjoin;
+--finding total count of educated and unmarried people
+totaleducatedunmarried = FOREACH counteducatedunmarried GENERATE SUM(eum) as educatedunmarried,1 as keyforjoin;
+--joining needed data in a single bag
+joiningdata = JOIN totaleducatedmarried by keyforjoin,totaleducatedunmarried by keyforjoin;
+--display the result 
+dump joiningdata
+
+
+RESULT:-
+--------
+
+total		educatedmarried		educatedunmarried
+455027		338195			116832
+
+
+
+
+3)how many of non citizen people are studing their ms in us and tell me indian people percentage in that?
+
+--loading data in to pig
+loadingdata = LOAD '/home/hduser/census' USING PigStorage(',') as (age : int,education : chararray,martialstatus : chararray,gender : chararray,taxfilerstatus : chararray,income : double,parents : chararray,countryofbirth : chararray,citizenship : chararray,weekworked : int);
+--filtering above data (not citizen and countryof birth is not United-States)
+filtereddata = FILTER loadingdata BY citizenship == 'Native- Born in Puerto Rico or U S Outlying' OR citizenship == 'Foreign born- Not a citizen of U S'  AND countryofbirth !='United-States' AND education == 'Masters degree(MA MS MEng MEd MSW MBA)';
+--finding indian details
+Indians = FILTER filtereddata BY countryofbirth =='India';
+--finding foreigners details
+foreigners = FILTER filtereddata BY countryofbirth !='India';
+--grouping indians to find count
+groupingindians = GROUP indians all;
+--grouping foreigners to find count
+groupingforeigners = GROUP foreigners all;
+--counting indian educators
+countofindians = FOREACH Indias GENERATE COUNT(Indians.education) as ic;
+--counting foreigner educators
+countofforeigners = FOREACH forigners GENERATE COUNT(foreigners.education) as fc;
+--grouping Indians to find out sum
+groupingic = GROUP countofindians all;
+--grouping foreigners to find sum
+groupingfc = GROUP countofforeigners all;
+--calculating sum of Indians
+totalindians = FOREACH countofindians GENERATE SUM(ic) as Indians,1 as keyforjoin;
+--caculating sum of foriners
+totalforeigners = FOREACH countofforeigners GENERATE SUM(fc) as Foreigners,1 as keyforjoin;
+--keeping needed data into a single bag
+joiningdetails = JOIN totalindians BY keyforjoin,totalforeigners BY keyforjoin;
+--calculating percentage
+percentagecalculation = FOREACH joiningdetails GENERATE SUM(Indians+Foreigners) as total,(Foreigners*100)/(Foreigners+Indians) as foreignerspercentage,(Indians*100)/(Foreigners+Indians) as Indianspercentage;
+--Display result
+dump percentagecalculation;
+
+
+RESULT:-
+--------
+
+total	forignerpercentage	 indianpercentage
+1150		89			 10
+
+
+
+
+
+
+
+
+
+
+
+ 
