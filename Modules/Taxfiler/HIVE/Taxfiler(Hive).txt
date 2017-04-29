@@ -1,0 +1,69 @@
+
+1)Find out the top ten taxpayers and display how many weeks they are working and find average income of them
+
+//filtering the data from census data by using our requried conditions and showing only top ten members data on income and ordering(desc) them on income 
+create view taxerdetails as select taxfilerstatus,income,weeksworked from censusdata WHERE taxfilerstatus != 'Nonfiler' GROUP by taxfilerstatus,income,weeksworked ORDER BY income desc limit 10;
+//Averaging the income from the above result
+create view topavgoftaxerdetails as select AVG(income) as avargeincome from taxerdetails; 
+
+
+RESULT:-
+--------
+	AVERAGE INCOME OF TOP 10 TAXPAYERS = 11902.97
+
+
+2)How many people are paying taxes an
+//loading taxpyers data
+CREATE VIEW samecitizenshiptaxers as SELECT taxfilerstatus,citizenship,COUNT(taxfilerstatus) as taxpayers FROM census where taxfilerstatus != 'Nonfiler' GROUP BY citizenship,taxfilerstatus;
+//counting taxpaers according to their citizenship 
+SELECT citizenship,SUM(taxpayers) as totalcountrytaxpayers FROM sameccitizenshiptaxers GROUP BY citizenship;
+
+
+CITIZENSHIP 					TOTALCOUNTRYTAXPAYERS
+
+
+Foreign born- Not a citizen of U S		26930
+
+Foreign born- U S citizen by naturalization	14405
+
+Native- Born abroad of American Parent(s)	3642
+
+Native- Born in Puerto Rico or U S Outlying	2466
+
+Native- Born in the United States		325237
+
+
+
+
+
+3)taxfiler according to gender---GURU
+
+//loading taxpayers data
+CREATE VIEW detailsoftax as SELECT gender,taxfilerstatus,COUNT(taxfilerstatus) as taxpayers FROM census WHERE taxfilerstatus != 'Nonfiler' GROUP BY taxfilerstatus,gender;
+
+
+//counting total taxpayers gender wise
+CREATE VIEW taxpayersgroupbygender as SELECT gender,SUM(taxpayers) as totaltaxpayers FROM detailsoftax GROUP BY gender;
+
+//calculating total taxpayers
+CREATE VIEW totaltaxpayers1 as SELECT SUM(totaltaxpayers) as total FROM taxpayersgroupbygender;
+
+//total female tax payers
+CREATE VIEW femaletaxpayer as SELECT gender,totaltaxpayers FROM taxpayersgroupbygender WHERE gender = 'Female';
+
+//total male taxpayers
+CREATE VIEW maletaxpayer as SELECT gender,totaltaxpayers FROM taxpayersgroupbygender WHERE gender = 'Male';
+
+//keeping al the details in a single view
+CREATE VIEW taxpaying as SELECT total,male,female FROM (SELECT total FROM totaltaxpayers1) a JOIN (SELECT totaltaxpayers as female FROM femaletaxpayer) b JOIN (SELECT totaltaxpayers as male FROM maletaxpayer) c; 
+
+//calculating percentage
+CREATE VIEW taxpayingpercentage as SELECT total,(male*100)/total as malepercentage,(female*100)/total as femalepercentage FROM taxpaying;
+
+
+
+
+
+
+total	malepercentage		femalepercentage
+372680	48.42143393796287	51.57856606203713
