@@ -1,0 +1,84 @@
+TAXFILER:-
+------------
+
+1) Find out the top ten taxpayers and display how many weeks they are working and find average income of them 
+--loading data into pig
+loadingdata = LOAD '/home/hduser/census' USING PigStorage(',') as (age : int,education : chararray,martialstatus : chararray,gender : chararray,taxfilerstatus : chararray,income : double,parents : chararray,countryofbirth : chararray,citizenship : chararray,weekworked : int);
+--filtering taxpayers data 
+findingtaxfiler = FILTER loadingdata BY taxfilerstatus!='Nonfiler';
+--ordering the data by income
+toptentaxfilers = ORDER findingtaxfiler BY income;
+--taking top 10 records 
+limitingtotopten = LIMIT toptentaxfilers 10;
+--grouping all to find their average
+foraverage = GROUP limitingtotopten all;
+--finding average
+findingaverage = FOREACH foraverage GENERATE AVG(limitingtotopten.income) as averagetop; 
+--showing output
+dump findingaverage;
+
+RESULT:-
+--------
+	AVERAGE INCOME OF TOP 10 TAXPAYERS = 11902.97
+
+
+2)taxfiler with same country and finding their count
+
+--loading data into pig
+loadingdata = LOAD '/home/hduser/census' USING PigStorage(',') as (age : int,education : chararray,martialstatus : chararray,gender : chararray,taxfilerstatus : chararray,income : double,parents : chararray,countryofbirth : chararray,citizenship : chararray,weekworked : int);
+--filtering taxpayers data
+findingtaxfiler = FILTER loadingdata BY taxfilerstatus!='Nonfiler';
+--grouping all to find the count
+forfinding = GROUP findingtaxfiler BY citizenship;
+--counting taxpayers by their ciizenship
+finalcount = FOREACH forfinding GENERATE group,COUNT(findingtaxfiler.citizenship),findingtaxfiler.citizenship as finnalcounting; 
+--showing output
+dump finalcount;
+
+
+RESULT:-
+---------
+
+
+Foreign born- Not a citizen of U S		26930
+
+Foreign born- U S citizen by naturalization	14405
+
+Native- Born abroad of American Parent(s)	3642
+
+Native- Born in Puerto Rico or U S Outlying	2466
+
+Native- Born in the United States		325237
+
+
+
+3)taxfiler according to gender
+
+--loading data in to pig
+loadingdata = LOAD '/home/hduser/census' USING PigStorage(',') as (age : int,education : chararray,martialstatus : chararray,gender : chararray,taxfilerstatus : chararray,income : double,parents : chararray,countryofbirth : chararray,citizenship : chararray,weekworked : int);
+--filtering taxpayers details
+findingtaxfilergender = FILTER loadingdata BY taxfilerstatus!='Nonfiler';
+--filter male taxpayers data
+filteringformale = FILTER findingtaxfilergender BY gender=='Male';
+--grouping male taxpayers
+malegrouping = GROUP filteringformale BY gender;
+--counting total male details
+sumforpermale = FOREACH malegrouping GENERATE COUNT(filteringformale.gender) as malecount,1 as keyforjoin;
+--filter female taxpayers
+filteringforfemale = FILTER findingtaxfilergender BY gender=='Female';
+--grouping female taxpayers
+femalegrouping = GROUP filteringforfemale BY gender;
+--counting female taxpayers
+sumforperfemale = FOREACH femalegrouping GENERATE COUNT(filteringforfemale.gender) as femalecount,1 as keyforjoin;
+--joining the needed data to a single bag
+joininggender = JOIN sumforperfemale BY keyforjoin,sumforpermale BY keyforjoin;  
+--calculating percentage
+finalpercentage = FOREACH joininggender GENERATE (malecount*100)/(malecount+femalecount) as malepercentage,(femalecount*100)/(malecount+femalecount) as femalepercentage;
+--showing result
+dump finalpercentage;
+
+RESULT:-
+--------
+
+malepercentage		femalepercentage
+48			51
